@@ -251,6 +251,16 @@ function FormLead({propiedades,agentes,onSave,onClose,leadEdit}){
     setSaving(false);
     if(err){alert("Error: "+err.message);}else{onSave();}
   };
+  const handleSave=async()=>{
+    if(!f.cliente_nombre?.trim()&&!f.observaciones?.trim()){alert("Completá al menos el nombre del cliente");return;}
+    setSaving(true);
+    const data={fecha:f.fecha,origen:f.origen||"Tokko",propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||(propiedades.find(p=>p.id===f.propiedad_id)?.nombre)||null,tipo_contacto:f.tipo_contacto||null,tipo_cat:f.tipo_cat||"Publicación Existente",cliente_nombre:f.cliente_nombre||null,cliente_tel:f.cliente_tel||null,agente_id:f.agente_id||null,estado:f.estado||null,estado_contacto:f.estado_contacto||null,observaciones:f.observaciones||null};
+    let err;
+    if(leadEdit?.id){({error:err}=await sb.from("leads").update(data).eq("id",leadEdit.id));}
+    else{({error:err}=await sb.from("leads").insert({...data,created_at:new Date().toISOString()}));}
+    setSaving(false);
+    if(err){alert("Error: "+err.message);}else{onSave();}
+  };
   const catOpts=["Publicación Existente","Solicitud de Tasación","Otros contactos comerciales"];
   const esPubExist=(f.tipo_cat||"Publicación Existente")==="Publicación Existente";
   const estadoOpts=["ABIERTO - sin contacto","ABIERTO - espera respuesta cliente","CERRADO - coordina visita","CERRADO - no interesado"];
