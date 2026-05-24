@@ -48,6 +48,9 @@ tr:hover td{background:#f8f9fb}
 }
 .hamburger{display:none;position:fixed;top:10px;left:10px;z-index:300;background:#fff;border:1px solid #e4e8f0;border-radius:8px;padding:7px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);flex-direction:column;gap:4px}
 .hamburger span{width:20px;height:2px;background:#333;display:block;border-radius:2px}
+.mobile-only{display:none}
+.desktop-only{display:block}
+@media(max-width:768px){.mobile-only{display:block}.desktop-only{display:none}}
 </style>
 </head>
 <body>
@@ -516,23 +519,35 @@ function Propiedades({props,agentes,clientes,onSelect,onRefresh,toast,user}){
         {(fE.length||busqueda)&&<button onClick={()=>{setFE([]);setBusqueda("");}} style={{padding:"4px 10px",fontSize:12,borderRadius:6,border:"1.5px solid #f1aeb5",background:"#fff0f1",color:"#842029",fontWeight:600}}>✕ Limpiar</button>}
       </div>
     </div>
-    {vista==="tabla"?<div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
-      <thead><tr style={{background:"#f8f9fc"}}>{["#","Propiedad","Tipo","Op.","Estado","Precio","ACM","Excl.","Aut. Venc.","GO","GET",""].map(h=><th key={h} style={{padding:"10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
-      <tbody>{filtradas.map(p=>{const c=ESTADOS[p.estado]||{bg:"#eee",text:"#333"};const venc=isVenc(p.aut_venc);return <tr key={p.id} style={{borderBottom:"1px solid #f0f2f5",cursor:"pointer"}} onClick={()=>onSelect(p)}>
-        <td style={{padding:"9px 10px",color:"#c0c8d8",fontFamily:"monospace",fontSize:11}}>#{p.id}</td>
-        <td style={{padding:"9px 10px",fontWeight:600,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</td>
-        <td style={{padding:"9px 10px",color:"#6c757d"}}>{p.tipo}</td>
-        <td style={{padding:"9px 10px"}}><span style={{fontSize:10,background:"#f0f2f5",borderRadius:4,padding:"2px 6px"}}>{p.operacion}</span></td>
-        <td style={{padding:"9px 10px"}}><span style={{background:c.bg,color:c.text,borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:700}}>{p.estado}</span></td>
-        <td style={{padding:"9px 10px"}}>{fUSD(p.precio_venta||p.precio_alquiler)}</td>
-        <td style={{padding:"9px 10px"}}>{fUSD(p.precio_acm)}</td>
-        <td style={{padding:"9px 10px",textAlign:"center"}}>{p.excl?<span style={{color:"#1D9E75",fontWeight:700}}>SI</span>:<span style={{color:"#c0c8d8"}}>NO</span>}</td>
-        <td style={{padding:"9px 10px",color:venc?"#dc3545":"#6c757d",fontWeight:venc?700:400}}>{fDate(p.aut_venc)}{venc?" ⚠":""}</td>
-        <td style={{padding:"9px 10px",textAlign:"center",color:"#BA7517",fontWeight:700}}>{p.go!=null?`${Math.round(p.go*100)}%`:"—"}</td>
-        <td style={{padding:"9px 10px",textAlign:"center",color:"#1D9E75",fontWeight:700}}>{p.get!=null?`${Math.round(p.get*100)}%`:"—"}</td>
-        <td style={{padding:"9px 10px"}}><button className="btn btn-secondary" style={{padding:"3px 10px",fontSize:11}} onClick={e=>{e.stopPropagation();setEditProp(p);setModal(true);}}>Editar</button></td>
-      </tr>;})}
-      </tbody></table></div>
+    {vista==="tabla"?<div>
+      <div className="desktop-only"><div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
+        <thead><tr style={{background:"#f8f9fc"}}>{["#","Propiedad","Tipo","Op.","Estado","Precio","ACM","Excl.","Aut. Venc.","GO","GET",""].map(h=><th key={h} style={{padding:"10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+        <tbody>{filtradas.map(p=>{const c=ESTADOS[p.estado]||{bg:"#eee",text:"#333"};const venc=isVenc(p.aut_venc);return <tr key={p.id} style={{borderBottom:"1px solid #f0f2f5",cursor:"pointer"}} onClick={()=>onSelect(p)}>
+          <td style={{padding:"9px 10px",color:"#c0c8d8",fontFamily:"monospace",fontSize:11}}>#{p.id}</td>
+          <td style={{padding:"9px 10px",fontWeight:600,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</td>
+          <td style={{padding:"9px 10px",color:"#6c757d"}}>{p.tipo}</td>
+          <td style={{padding:"9px 10px"}}><span style={{fontSize:10,background:"#f0f2f5",borderRadius:4,padding:"2px 6px"}}>{p.operacion}</span></td>
+          <td style={{padding:"9px 10px"}}><span style={{background:c.bg,color:c.text,borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:700}}>{p.estado}</span></td>
+          <td style={{padding:"9px 10px"}}>{fUSD(p.precio_venta||p.precio_alquiler)}</td>
+          <td style={{padding:"9px 10px"}}>{fUSD(p.precio_acm)}</td>
+          <td style={{padding:"9px 10px",textAlign:"center"}}>{p.excl?<span style={{color:"#1D9E75",fontWeight:700}}>SI</span>:<span style={{color:"#c0c8d8"}}>NO</span>}</td>
+          <td style={{padding:"9px 10px",color:venc?"#dc3545":"#6c757d",fontWeight:venc?700:400}}>{fDate(p.aut_venc)}{venc?" ⚠":""}</td>
+          <td style={{padding:"9px 10px",textAlign:"center",color:"#BA7517",fontWeight:700}}>{p.go!=null?`${Math.round(p.go*100)}%`:"—"}</td>
+          <td style={{padding:"9px 10px",textAlign:"center",color:"#1D9E75",fontWeight:700}}>{p.get!=null?`${Math.round(p.get*100)}%`:"—"}</td>
+          <td style={{padding:"9px 10px"}}><button className="btn btn-secondary" style={{padding:"3px 10px",fontSize:11}} onClick={e=>{e.stopPropagation();setEditProp(p);setModal(true);}}>Editar</button></td>
+        </tr>;})}
+        </tbody></table></div></div>
+      <div className="mobile-only">{filtradas.map(p=>{const c=ESTADOS[p.estado]||{bg:"#eee",text:"#333"};const venc=isVenc(p.aut_venc);return <div key={p.id} className="card" style={{marginBottom:8,padding:"10px 12px",cursor:"pointer",borderLeft:`3px solid ${c.dot||"#888"}`}} onClick={()=>onSelect(p)}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+          <div style={{flex:1,minWidth:0}}><p style={{margin:0,fontWeight:700,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</p><p style={{margin:"2px 0 0",fontSize:11,color:"#adb5bd"}}>{p.tipo} · {p.operacion}</p></div>
+          <span style={{background:c.bg,color:c.text,borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:700,marginLeft:8,flexShrink:0}}>{p.estado}</span>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:12}}><span style={{color:"#1D9E75",fontWeight:700}}>{fUSD(p.precio_venta||p.precio_alquiler)}</span>{venc&&<span style={{color:"#dc3545",fontWeight:700,marginLeft:8}}>⚠ Vencida</span>}</div>
+          <button className="btn btn-secondary" style={{padding:"4px 12px",fontSize:12,flexShrink:0}} onClick={e=>{e.stopPropagation();setEditProp(p);setModal(true);}}>Editar</button>
+        </div>
+      </div>;})}
+      </div></div>
     :<div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
       {["CA","PU","VE","TE","NO"].map(est=>{const cols=filtradas.filter(p=>p.estado===est);const c=ESTADOS[est];return <div key={est}>
         <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10,padding:"7px 10px",background:c.bg,borderRadius:8}}><div style={{width:10,height:10,borderRadius:2,background:c.dot}}/><span style={{fontSize:11,fontWeight:700,color:c.text}}>{est}</span><span style={{marginLeft:"auto",fontSize:11,background:"rgba(0,0,0,.1)",borderRadius:10,padding:"1px 7px",color:c.text}}>{cols.length}</span></div>
@@ -732,7 +747,7 @@ function MetricasPage({metricas,props,onRefresh,toast}){
       <h2 style={{fontSize:21,fontWeight:800,margin:0}}>Impactos — Portales Inmobiliarios</h2>
       <div style={{display:"flex",gap:8,alignItems:"center"}}><Logo size={28}/><button className="btn btn-primary" onClick={()=>setModal(true)}>+ Cargar métricas</button></div>
     </div>
-    <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
+    <div className="desktop-only"><div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
       <thead><tr style={{background:"#f8f9fc"}}>{["Período","Propiedad","Zonaprop","Argenprop","MercadoLibre","Total",""].map(h=><th key={h} style={{padding:"9px 10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0"}}>{h}</th>)}</tr></thead>
       <tbody>{met.map(m=>{const tot=(m.zonaprop||0)+(m.argenprop||0)+(m.mercadolibre||0);return <tr key={m.id} style={{borderBottom:"1px solid #f8f9fa"}}>
         <td style={{padding:"8px 10px",fontWeight:600}}>{ML[m.mes]} {m.anio}</td>
@@ -744,7 +759,20 @@ function MetricasPage({metricas,props,onRefresh,toast}){
         <td style={{padding:"8px 10px"}}><button className="btn btn-secondary" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditMet(m);setModalEdit(true);}}>✏️</button></td>
       </tr>;})}
       </tbody>
-    </table></div>
+    </table></div></div>
+    <div className="mobile-only">{met.map(m=>{const tot=(m.zonaprop||0)+(m.argenprop||0)+(m.mercadolibre||0);return <div key={m.id} className="card" style={{marginBottom:8,padding:"10px 12px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+        <div><p style={{margin:0,fontWeight:700,fontSize:12,color:"#6c757d"}}>{ML[m.mes]} {m.anio}</p><p style={{margin:"2px 0 0",fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:200}}>{m.propiedad_nombre}</p></div>
+        <button className="btn btn-secondary" style={{padding:"4px 12px",fontSize:12,flexShrink:0}} onClick={()=>{setEditMet(m);setModalEdit(true);}}>✏️ Editar</button>
+      </div>
+      <div style={{display:"flex",gap:12,fontSize:12}}>
+        <span style={{color:"#185FA5",fontWeight:700}}>Z: {m.zonaprop||0}</span>
+        <span style={{color:"#1D9E75",fontWeight:700}}>A: {m.argenprop||0}</span>
+        <span style={{color:"#BA7517",fontWeight:700}}>ML: {m.mercadolibre||0}</span>
+        <span style={{fontWeight:800}}>Total: {tot}</span>
+      </div>
+    </div>;})}
+    </div>
     {modal&&<Modal title="Cargar métricas" onClose={()=>setModal(false)}><FormMetrica propiedades={props} onSave={()=>{setModal(false);onRefresh();toast("Métricas guardadas","success");}} onClose={()=>setModal(false)}/></Modal>}
     {modalEdit&&editMet&&<Modal title="Editar Impactos" onClose={()=>{setModalEdit(false);setEditMet(null);}}><FormEditMetrica metrica={editMet} propiedades={props} onSave={()=>{setModalEdit(false);setEditMet(null);onRefresh();toast("Impactos actualizados","success");}} onClose={()=>{setModalEdit(false);setEditMet(null);}}/></Modal>}
   </div>;
