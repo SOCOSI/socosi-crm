@@ -624,7 +624,7 @@ function LeadsPage({leads,props,agentes,onRefresh,toast}){
       <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar..." style={{padding:"5px 10px",fontSize:12,borderRadius:6,border:"1.5px solid #dee2e6",minWidth:160,outline:"none"}}/>
       {(fE.length||busqueda||fOrigen)&&<button onClick={()=>{setFE([]);setBusqueda("");setFOrigen("");}} style={{padding:"4px 10px",fontSize:12,borderRadius:6,border:"1.5px solid #f1aeb5",background:"#fff0f1",color:"#842029",fontWeight:600}}>✕</button>}
     </div></div>
-    <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
+    <div className="desktop-only"><div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
       <thead><tr style={{background:"#f8f9fc"}}>{["Fecha","Cliente","Propiedad","Tipo de Contacto","Origen","Agente","Estado",""].map(h=><th key={h} style={{padding:"9px 10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0"}}>{h}</th>)}</tr></thead>
       <tbody>{filtrados.map(l=><tr key={l.id} style={{borderBottom:"1px solid #f8f9fa"}}>
         <td style={{padding:"8px 10px",color:"#adb5bd"}}>{fDate(l.fecha)}</td>
@@ -636,7 +636,21 @@ function LeadsPage({leads,props,agentes,onRefresh,toast}){
         <td style={{padding:"8px 10px"}}>{(()=>{const ec=l.estado_contacto||"";const isAb=ec.startsWith("ABIERTO");const color=ec.includes("sin contacto")?"#BA7517":ec.includes("espera")?"#2563eb":ec.includes("coordina")?"#1D9E75":ec.includes("no interesado")?"#dc3545":ec.includes("CERRADO ANTERIOR")?"#9E9E9E":"#6c757d";return ec?<span style={{fontSize:10,fontWeight:700,color,background:color+"18",borderRadius:4,padding:"2px 6px",whiteSpace:"nowrap"}}>{ec}</span>:<span style={{color:"#adb5bd",fontSize:11}}>—</span>;})()}</td>
         <td style={{padding:"8px 10px"}}><button className="btn btn-secondary" style={{padding:"3px 10px",fontSize:11}} onClick={()=>{setEditLead(l);setModal(true);}}>Editar</button></td>
       </tr>)}</tbody>
-    </table></div>
+    </table></div></div>
+    <div className="mobile-only">{filtrados.map(l=>{const ec=l.estado_contacto||"";const color=ec.includes("sin contacto")?"#BA7517":ec.includes("espera")?"#2563eb":ec.includes("coordina")?"#1D9E75":ec.includes("no interesado")?"#dc3545":ec.includes("CERRADO ANTERIOR")?"#9E9E9E":"#6c757d";return <div key={l.id} className="card" style={{marginBottom:8,padding:"10px 12px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+        <div style={{flex:1,minWidth:0}}>
+          <p style={{margin:0,fontWeight:700,fontSize:13}}>{l.cliente_nombre||"—"}</p>
+          <p style={{margin:"2px 0 0",fontSize:11,color:"#adb5bd",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.propiedad_nombre||"—"}</p>
+        </div>
+        <Av id={l.agente_id} size={28}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>{ec&&<span style={{fontSize:10,fontWeight:700,color,background:color+"18",borderRadius:4,padding:"2px 6px"}}>{ec}</span>}<p style={{margin:"4px 0 0",fontSize:11,color:"#adb5bd"}}>{fDate(l.fecha)} · {l.origen||"—"}</p></div>
+        <button className="btn btn-secondary" style={{padding:"4px 12px",fontSize:12,flexShrink:0}} onClick={()=>{setEditLead(l);setModal(true);}}>Editar</button>
+      </div>
+    </div>;})}
+    </div>
     {modal&&<Modal title={editLead?"Editar contacto":"Nuevo contacto"} onClose={()=>{setModal(false);setEditLead(null);}}>
       <FormLead propiedades={props} agentes={agentes} onSave={handleSave} onClose={()=>{setModal(false);setEditLead(null);}} leadEdit={editLead}/>
     </Modal>}
