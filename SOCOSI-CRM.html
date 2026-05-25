@@ -326,6 +326,13 @@ function FormEditMetrica({metrica,propiedades,onSave,onClose}){
     setSaving(false);
     if(error){alert("Error: "+error.message);}else{onSave();}
   };
+  const handleDelete=async()=>{
+    if(!window.confirm("⚠️ ¿Eliminar este registro de impactos?\n\n"+f.propiedad_nombre+" — "+["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][f.mes]+" "+f.anio+"\n\nEsta acción no se puede deshacer."))return;
+    setSaving(true);
+    const{error}=await sb.from("metricas_portales").delete().eq("id",metrica.id);
+    setSaving(false);
+    if(error){alert("Error: "+error.message);}else{onSave();}
+  };
   return <div>
     <p style={{fontSize:13,color:"#6c757d",marginBottom:12}}><b>{f.propiedad_nombre}</b> — {["","Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][f.mes]} {f.anio}</p>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -333,9 +340,12 @@ function FormEditMetrica({metrica,propiedades,onSave,onClose}){
       <div className="form-group"><label>Argenprop</label><input className="form-control" type="number" value={f.argenprop||0} onChange={e=>set("argenprop",e.target.value)}/></div>
       <div className="form-group"><label>MercadoLibre</label><input className="form-control" type="number" value={f.mercadolibre||0} onChange={e=>set("mercadolibre",e.target.value)}/></div>
     </div>
-    <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
-      <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-      <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?"Guardando...":"Guardar"}</button>
+    <div style={{display:"flex",gap:8,justifyContent:"space-between",marginTop:8}}>
+      <button onClick={handleDelete} disabled={saving} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #dc3545",background:"#fff0f1",color:"#dc3545",fontWeight:700,fontSize:13,cursor:"pointer"}}>🗑 Eliminar</button>
+      <div style={{display:"flex",gap:8}}>
+        <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?"Guardando...":"Guardar"}</button>
+      </div>
     </div>
   </div>;
 }
