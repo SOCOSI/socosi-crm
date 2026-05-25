@@ -752,11 +752,25 @@ function MetricasPage({metricas,props,onRefresh,toast}){
   const [modal,setModal]=useState(false);
   const [editMet,setEditMet]=useState(null);
   const [modalEdit,setModalEdit]=useState(false);
-  const met=[...metricas].sort((a,b)=>a.anio!==b.anio?b.anio-a.anio:b.mes-a.mes);
+  const [busqueda,setBusqueda]=useState("");
+  const [fAnio,setFAnio]=useState("");
+  const aniosDisp=[...new Set(metricas.map(m=>m.anio).filter(Boolean))].sort().reverse();
+  const met=[...metricas].sort((a,b)=>a.anio!==b.anio?b.anio-a.anio:b.mes-a.mes).filter(m=>{
+    if(fAnio&&m.anio!==Number(fAnio))return false;
+    if(busqueda&&!m.propiedad_nombre?.toLowerCase().includes(busqueda.toLowerCase()))return false;
+    return true;
+  });
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
-      <h2 style={{fontSize:21,fontWeight:800,margin:0}}>Impactos — Portales Inmobiliarios</h2>
+      <h2 style={{fontSize:21,fontWeight:800,margin:0}}>Impactos — Portales Inmobiliarios <span style={{fontSize:14,fontWeight:400,color:"#adb5bd"}}>({met.length}/{metricas.length})</span></h2>
       <div style={{display:"flex",gap:8,alignItems:"center"}}><Logo size={28}/><button className="btn btn-primary" onClick={()=>setModal(true)}>+ Cargar métricas</button></div>
+    </div>
+    <div className="card" style={{marginBottom:"1rem",padding:"10px 14px"}}>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+        <select value={fAnio} onChange={e=>setFAnio(e.target.value)} style={{padding:"5px 10px",fontSize:12,borderRadius:6,border:"1.5px solid #dee2e6",color:fAnio?"#2563eb":"#6c757d",fontWeight:fAnio?700:400}}><option value="">Año: Todos</option>{aniosDisp.map(a=><option key={a} value={a}>{a}</option>)}</select>
+        <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar propiedad..." style={{padding:"5px 10px",fontSize:12,borderRadius:6,border:"1.5px solid #dee2e6",minWidth:200,outline:"none",flex:1}}/>
+        {(fAnio||busqueda)&&<button onClick={()=>{setFAnio("");setBusqueda("");}} style={{padding:"4px 10px",fontSize:12,borderRadius:6,border:"1.5px solid #f1aeb5",background:"#fff0f1",color:"#842029",fontWeight:600}}>✕ Limpiar</button>}
+      </div>
     </div>
     <div className="desktop-only"><div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
       <thead><tr style={{background:"#f8f9fc"}}>{["Período","Propiedad","Zonaprop","Argenprop","MercadoLibre","Total",""].map(h=><th key={h} style={{padding:"9px 10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0"}}>{h}</th>)}</tr></thead>
