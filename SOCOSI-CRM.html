@@ -77,7 +77,7 @@ VIS_DATA.forEach((v,i)=>{v.id=i+1;});
 MET_DATA.forEach((m,i)=>{m.id=i+1;m.zonaprop=Number(m.zonaprop)||0;m.argenprop=Number(m.argenprop)||0;m.mercadolibre=Number(m.mercadolibre)||0;m.tokko=0;});
 
 const SUPA_URL = "https://qrppoyijpqyghzvhndyv.supabase.co";
-const SUPA_KEY = "sb_publishable_iBtz1FuG13HbSnnQa5AAFQ_BrKnf3UB";
+const SUPA_KEY = "sb_publishable_JRBKomCsYV5HpCkzF6jiDg_eG29WkaF";
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const ESTADOS={CA:{bg:"#FFF3CD",text:"#856404",dot:"#BA7517"},PU:{bg:"#D1F0E4",text:"#0A5C34",dot:"#1D9E75"},VE:{bg:"#E8E0F5",text:"#432874",dot:"#7F77DD"},TE:{bg:"#FFE0E3",text:"#842029",dot:"#C0392B"},NO:{bg:"#EBEBEB",text:"#495057",dot:"#888"}};
 const AC={MG:"#1D9E75",FG:"#2563eb",DM:"#D85A30",GT:"#D4537E"};
