@@ -983,7 +983,7 @@ function Publicaciones({props,leads,visitas,metricas}){
       {[0,.25,.5,.75,1].map(t=><line key={t} x1={pL} x2={W-pR} y1={pT+cH*(1-t)} y2={pT+cH*(1-t)} stroke="#eef0f3" strokeWidth="1"/>)}
       {portales.map((p,i)=><path key={p.key} d={area(i===0?null:portales[i-1].top,p.top)} fill={p.fill}/>)}
       {portales.map(p=><path key={p.key+"l"} d={line(p.top)} fill="none" stroke={p.color} strokeWidth="2" strokeLinejoin="round"/>)}
-      {portales.map(p=>stacked.map((d,i)=>{const v=d[p.key];if(!v)return null;return <g key={`${p.key}-${i}`}><circle cx={xP(i)} cy={yP(d[p.top])} r={3} fill={p.color} stroke="#fff" strokeWidth="1"/>{(n<=12||i%2===0)&&<text x={xP(i)} y={yP(d[p.top])-6} textAnchor="middle" fontSize="8" fill={p.color} fontWeight="700">{v}</text>}</g>;}))}
+      {portales.map((p,pi)=>stacked.map((d,i)=>{const v=d[p.key];if(!v&&d.s3===0)return null;const isTop=pi===portales.length-1;const label=isTop?d.s3:null;return <g key={`${p.key}-${i}`}><circle cx={xP(i)} cy={yP(d[p.top])} r={3} fill={p.color} stroke="#fff" strokeWidth="1"/>{isTop&&label!=null&&(n<=12||i%2===0)&&<text x={xP(i)} y={yP(d[p.top])-6} textAnchor="middle" fontSize="9" fill="#1a1a2e" fontWeight="800">{label}</text>}</g>;}))}
       {stacked.map((d,i)=>(n<=14||i%2===0)&&<text key={i} x={xP(i)} y={H-4} textAnchor="middle" fontSize="8" fill="#bbb">{ML2[d.mes]}'{String(d.anio).slice(2)}</text>)}
       {[0,Math.round(maxY*.5),Math.round(maxY)].map((v,i)=><text key={i} x={pL-4} y={yP(v)+4} textAnchor="end" fontSize="9" fill="#bbb">{v>=1000?`${Math.round(v/1000)}k`:v}</text>)}
     </svg>;
