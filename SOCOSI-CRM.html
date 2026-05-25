@@ -555,7 +555,7 @@ function Propiedades({props,agentes,clientes,onSelect,onRefresh,toast,user}){
 
 function PropDetalle({prop,leads,visitas,metricas,agentes,onBack,onRefresh,toast}){
   const [tab,setTab]=useState("info");const [mL,setML]=useState(false);const [mV,setMV]=useState(false);const [mM,setMM]=useState(false);
-  const pL=leads.filter(l=>l.propiedad_id===prop.id);const pV=visitas.filter(v=>v.propiedad_id===prop.id);const pM=metricas.filter(m=>m.propiedad_id===prop.id||((!m.propiedad_id)&&m.propiedad_nombre===prop.nombre)).sort((a,b)=>a.anio!==b.anio?a.anio-b.anio:a.mes-b.mes);
+  const pL=leads.filter(l=>l.propiedad_id===prop.id);const pV=visitas.filter(v=>v.propiedad_id===prop.id);const pM=metricas.filter(m=>m.propiedad_nombre===prop.nombre).sort((a,b)=>a.anio!==b.anio?a.anio-b.anio:a.mes-b.mes);
   const venc=isVenc(prop.aut_venc);const ag=agentes.find(a=>a.id===prop.agente_id);
   return <div>
     <button onClick={onBack} style={{background:"none",border:"none",color:"#2563eb",fontSize:13,padding:"0 0 12px",display:"flex",alignItems:"center",gap:4,fontWeight:600}}>← Volver a propiedades</button>
@@ -962,7 +962,7 @@ function Publicaciones({props,leads,visitas,metricas}){
   },[props,fEstado]);
   useEffect(()=>{if(propsFiltradas.length>0&&(!propSel||!propsFiltradas.find(p=>p.id===propSel?.id)))setPropSel(propsFiltradas[0]);},[propsFiltradas]);
   const prop=propSel;
-  const propMet=useMemo(()=>{if(!prop)return[];return metricas.filter(m=>m.propiedad_id===prop.id||((!m.propiedad_id)&&m.propiedad_nombre===prop.nombre)).sort((a,b)=>a.anio!==b.anio?a.anio-b.anio:a.mes-b.mes);},[prop,metricas]);
+  const propMet=useMemo(()=>{if(!prop)return[];return metricas.filter(m=>m.propiedad_nombre===prop.nombre).sort((a,b)=>a.anio!==b.anio?a.anio-b.anio:a.mes-b.mes);},[prop,metricas]);
   const propLeads=prop?leads.filter(l=>l.propiedad_id===prop.id||(l.propiedad_nombre&&(l.propiedad_nombre===prop.nombre||l.propiedad_nombre===prop.nombre?.trim()))):[];
   const propVis=prop?visitas.filter(v=>v.propiedad_nombre===prop.nombre):[];
   const venc=prop?isVenc(prop.aut_venc):false;
