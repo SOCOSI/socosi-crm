@@ -184,7 +184,7 @@ function FormPropiedad({prop,agentes,clientes,onSave,onClose,onCreateFolder,isAd
     const data={nombre:f.nombre,estado:f.estado,tipo:f.tipo,operacion:f.operacion,origen:f.origen||null,activo:f.activo!==false,excl:!!f.excl,cliente:f.cliente||null,tel_cliente:f.tel_cliente||null,precio_venta:f.precio_venta?Number(f.precio_venta):null,precio_alquiler:f.precio_alquiler?Number(f.precio_alquiler):null,precio_acm:f.precio_acm?Number(f.precio_acm):null,aut_firma:f.aut_firma||null,aut_venc:f.aut_venc||null,go:f.go?Number(f.go):null,get:f.get?Number(f.get):null,direccion:f.direccion||null,observaciones:f.observaciones||null,updated_at:new Date().toISOString()};
     let err;
     if(f.id){({error:err}=await sb.from("propiedades").update(data).eq("id",f.id));}
-    else{const newId=String(10000+Math.floor(Math.random()*9000));({error:err}=await sb.from("propiedades").insert({...data,id:newId,created_at:new Date().toISOString()}));}
+    else{const{data:allProps}=await sb.from("propiedades").select("id");const maxId=allProps&&allProps.length>0?Math.max(...allProps.map(p=>parseInt(p.id)||0)):10000;const newId=String(maxId+1);({error:err}=await sb.from("propiedades").insert({...data,id:newId,created_at:new Date().toISOString()}));}
     setSaving(false);
     if(err){alert("Error: "+err.message);}else{onSave();}
   };
