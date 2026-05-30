@@ -485,14 +485,14 @@ function Dashboard({props,leads,visitas,metricas,acciones,onNav,activeTab}){
       const esAbierto=l=>l.estado_contacto==="ABIERTO - sin contacto"||l.estado_contacto==="ABIERTO - espera respuesta cliente";
       const tablaContactos=(lista)=>{
         if(lista.length===0)return <p style={{color:"#adb5bd",fontSize:12}}>Sin contactos pendientes</p>;
-        return <table style={{width:"100%",fontSize:12}}><thead><tr style={{borderBottom:"2px solid #f0f2f5"}}>{["Fecha","Cliente","Agente","Tipo","Estado","Ver"].map(h=><th key={h} style={{padding:"5px 8px",color:"#6c757d",fontWeight:600}}>{h}</th>)}</tr></thead>
+        return <table style={{width:"100%",fontSize:12}}><thead><tr style={{borderBottom:"2px solid #f0f2f5"}}>{["Fecha","Cliente","Agente","Tipo","Propiedad","Estado"].map(h=><th key={h} style={{padding:"5px 8px",color:"#6c757d",fontWeight:600,textAlign:"left"}}>{h}</th>)}</tr></thead>
         <tbody>{lista.map(l=>{const ec=l.estado_contacto||"";const color=ec.includes("sin contacto")?"#BA7517":"#2563eb";return <tr key={l.id} style={{borderBottom:"1px solid #f8f9fa"}}>
           <td style={{padding:"6px 8px",color:"#adb5bd"}}>{fDate(l.fecha)}</td>
           <td style={{padding:"6px 8px",fontWeight:600}}>{l.cliente_nombre}</td>
           <td style={{padding:"6px 8px"}}><Av id={l.agente_id} size={20}/></td>
           <td style={{padding:"6px 8px",fontSize:11}}>{l.tipo_cat||"—"}</td>
+          <td style={{padding:"6px 8px",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#6c757d",fontSize:11}}>{l.propiedad_nombre||"—"}</td>
           <td style={{padding:"6px 8px"}}><span style={{fontSize:10,fontWeight:700,color,background:color+"18",borderRadius:4,padding:"2px 6px",whiteSpace:"nowrap"}}>{ec}</span></td>
-          <td style={{padding:"6px 8px"}}><button onClick={()=>onNav("leads")} style={{background:"none",border:"none",color:"#2563eb",cursor:"pointer",fontSize:12,textDecoration:"underline"}}>→ Ver</button></td>
         </tr>;})}
         </tbody></table>;
       };
@@ -947,6 +947,7 @@ function Analytics({props,leads,visitas,metricas,agentes,onRefresh,toast,initTab
 function LoginScreen({onLogin}){
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
+  const [acciones,setAcciones]=useState([]);
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const handleLogin=async(e)=>{
@@ -1145,100 +1146,53 @@ function OtrasAccionesPage({acciones,props,agentes,onRefresh,toast}){
   const [fEstado,setFEstado]=useState("abiertos");
   const [busqueda,setBusqueda]=useState("");
   const hoy=new Date();hoy.setHours(0,0,0,0);
-
   const propsFiltradas=props.filter(p=>p.estado==="CA"||p.estado==="PU");
-
-  const getEstado=(a)=>{
-    if(a.fecha_cierre_real)return "cerrado";
-    if(!a.fecha_vencimiento)return "abierto";
-    const v=new Date(a.fecha_vencimiento);v.setHours(0,0,0,0);
-    if(v<hoy)return "vencido";
-    if(v<=new Date(hoy.getTime()+7*24*60*60*1000))return "proximo";
-    return "abierto";
-  };
-
-  const filtradas=[...acciones].filter(a=>{
-    const est=getEstado(a);
-    if(fEstado==="abiertos"&&est==="cerrado")return false;
-    if(fEstado==="cerrados"&&est!=="cerrado")return false;
-    if(busqueda){const q=busqueda.toLowerCase();if(!(a.descripcion||"").toLowerCase().includes(q)&&!(a.propiedad_nombre||"").toLowerCase().includes(q))return false;}
-    return true;
-  });
-
-  const estadoStyle=(est)=>{
-    if(est==="cerrado")return {bg:"#e8f5e9",color:"#0A5C34",label:"CERRADO"};
-    if(est==="vencido")return {bg:"#ffe0e3",color:"#842029",label:"VENCIDO"};
-    if(est==="proximo")return {bg:"#FFF3CD",color:"#856404",label:"PRÓXIMO"};
-    return {bg:"#EEF3FF",color:"#2563eb",label:"ABIERTO"};
-  };
-
+  const getEstado=(a)=>{if(a.fecha_cierre_real)return "cerrado";if(!a.fecha_vencimiento)return "abierto";const v=new Date(a.fecha_vencimiento);v.setHours(0,0,0,0);if(v<hoy)return "vencido";if(v<=new Date(hoy.getTime()+7*24*60*60*1000))return "proximo";return "abierto";};
+  const filtradas=[...acciones].filter(a=>{const est=getEstado(a);if(fEstado==="abiertos"&&est==="cerrado")return false;if(fEstado==="cerrados"&&est!=="cerrado")return false;if(busqueda){const q=busqueda.toLowerCase();if(!(a.descripcion||"").toLowerCase().includes(q)&&!(a.propiedad_nombre||"").toLowerCase().includes(q))return false;}return true;});
+  const estadoStyle=(est)=>{if(est==="cerrado")return {bg:"#e8f5e9",color:"#0A5C34",label:"CERRADO"};if(est==="vencido")return {bg:"#ffe0e3",color:"#842029",label:"VENCIDO"};if(est==="proximo")return {bg:"#FFF3CD",color:"#856404",label:"PRÓXIMO"};return {bg:"#EEF3FF",color:"#2563eb",label:"ABIERTO"};};
   const del=async(id)=>{if(!confirm("⚠️ ¿Eliminar esta acción? Los datos NO se recuperan."))return;const{error}=await sb.from("acciones").delete().eq("id",id);if(error){alert(error.message);}else{onRefresh();toast("Acción eliminada","success");}};
-
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
       <h2 style={{fontSize:21,fontWeight:800,margin:0}}>Otras Acciones</h2>
       <div style={{display:"flex",gap:8,alignItems:"center"}}><Logo size={28}/><button className="btn btn-primary" onClick={()=>{setEditAcc(null);setModal(true);}}>+ Nueva acción</button></div>
     </div>
     <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:"1.5rem"}}>
-      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
-        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>TOTAL ABIERTAS</p>
-        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#2563eb"}}>{acciones.filter(a=>!a.fecha_cierre_real).length}</p>
-      </div>
-      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
-        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>VENCIDAS</p>
-        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#dc3545"}}>{acciones.filter(a=>getEstado(a)==="vencido").length}</p>
-      </div>
-      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
-        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>PRÓX. 7 DÍAS</p>
-        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#BA7517"}}>{acciones.filter(a=>getEstado(a)==="proximo").length}</p>
-      </div>
-      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
-        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>CERRADAS</p>
-        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#1D9E75"}}>{acciones.filter(a=>a.fecha_cierre_real).length}</p>
-      </div>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}><p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>TOTAL ABIERTAS</p><p style={{margin:0,fontSize:22,fontWeight:800,color:"#2563eb"}}>{acciones.filter(a=>!a.fecha_cierre_real).length}</p></div>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}><p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>VENCIDAS</p><p style={{margin:0,fontSize:22,fontWeight:800,color:"#dc3545"}}>{acciones.filter(a=>getEstado(a)==="vencido").length}</p></div>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}><p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>PRÓX. 7 DÍAS</p><p style={{margin:0,fontSize:22,fontWeight:800,color:"#BA7517"}}>{acciones.filter(a=>getEstado(a)==="proximo").length}</p></div>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}><p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>CERRADAS</p><p style={{margin:0,fontSize:22,fontWeight:800,color:"#1D9E75"}}>{acciones.filter(a=>a.fecha_cierre_real).length}</p></div>
     </div>
-    <div className="card" style={{marginBottom:"1rem",padding:"10px 14px"}}>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-        <span style={{fontSize:12,color:"#6c757d",fontWeight:700}}>Ver:</span>
-        {[["abiertos","Abiertas"],["cerrados","Cerradas"],["todos","Todas"]].map(([v,l])=><button key={v} onClick={()=>setFEstado(v)} style={{padding:"3px 12px",borderRadius:6,border:`2px solid ${fEstado===v?"#2563eb":"#dee2e6"}`,background:fEstado===v?"#EEF3FF":"#fff",color:fEstado===v?"#2563eb":"#6c757d",fontWeight:fEstado===v?700:400,fontSize:12}}>{l}</button>)}
-        <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar..." style={{padding:"5px 10px",borderRadius:6,border:"1.5px solid #dee2e6",fontSize:12,marginLeft:"auto",minWidth:160}}/>
-      </div>
-    </div>
-    <div className="card" style={{padding:0,overflow:"hidden"}}>
-      <table style={{width:"100%",fontSize:12}}>
-        <thead><tr style={{background:"#f8f9fc"}}>{["N°","Fecha","Propiedad","Descripción","Agente","Vencimiento","Estado",""].map(h=><th key={h} style={{padding:"9px 10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0",textAlign:"left"}}>{h}</th>)}</tr></thead>
-        <tbody>{filtradas.length===0?<tr><td colSpan={8} style={{padding:20,textAlign:"center",color:"#adb5bd"}}>Sin acciones</td></tr>:filtradas.map(a=>{const est=getEstado(a);const s=estadoStyle(est);const venc=a.fecha_vencimiento?new Date(a.fecha_vencimiento):null;return <tr key={a.id} style={{borderBottom:"1px solid #f8f9fa"}}>
-          <td style={{padding:"8px 10px",color:"#adb5bd",fontWeight:600}}>#{a.numero}</td>
-          <td style={{padding:"8px 10px",color:"#adb5bd"}}>{a.fecha_carga?new Date(a.fecha_carga).toLocaleDateString("es-AR"):"—"}</td>
-          <td style={{padding:"8px 10px",maxWidth:110,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#6c757d"}}>{a.propiedad_nombre||"—"}</td>
-          <td style={{padding:"8px 10px",maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600}}>{a.descripcion}</td>
-          <td style={{padding:"8px 10px"}}><Av id={a.agente_id} size={22}/></td>
-          <td style={{padding:"8px 10px",color:est==="vencido"?"#dc3545":est==="proximo"?"#BA7517":"#6c757d",fontWeight:est==="vencido"||est==="proximo"?700:400}}>{venc?venc.toLocaleDateString("es-AR"):"—"}</td>
-          <td style={{padding:"8px 10px"}}><span style={{background:s.bg,color:s.color,borderRadius:4,padding:"2px 8px",fontWeight:700}}>{s.label}</span></td>
-          <td style={{padding:"8px 10px",display:"flex",gap:4}}>
-            <button className="btn btn-secondary" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditAcc(a);setModalEdit(true);}}>✏️</button>
-            <button style={{padding:"3px 8px",fontSize:11,borderRadius:6,border:"1px solid #f1aeb5",background:"#fff0f1",color:"#842029",cursor:"pointer"}} onClick={()=>del(a.id)}>🗑️</button>
-          </td>
-        </tr>;})}</tbody>
-      </table>
-    </div>
+    <div className="card" style={{marginBottom:"1rem",padding:"10px 14px"}}><div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+      <span style={{fontSize:12,color:"#6c757d",fontWeight:700}}>Ver:</span>
+      {[["abiertos","Abiertas"],["cerrados","Cerradas"],["todos","Todas"]].map(([v,l])=><button key={v} onClick={()=>setFEstado(v)} style={{padding:"3px 12px",borderRadius:6,border:`2px solid ${fEstado===v?"#2563eb":"#dee2e6"}`,background:fEstado===v?"#EEF3FF":"#fff",color:fEstado===v?"#2563eb":"#6c757d",fontWeight:fEstado===v?700:400,fontSize:12}}>{l}</button>)}
+      <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar..." style={{padding:"5px 10px",borderRadius:6,border:"1.5px solid #dee2e6",fontSize:12,marginLeft:"auto",minWidth:160}}/>
+    </div></div>
+    <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
+      <thead><tr style={{background:"#f8f9fc"}}>{["N°","Fecha","Propiedad","Descripción","Agente","Vencimiento","Estado",""].map(h=><th key={h} style={{padding:"9px 10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0",textAlign:"left"}}>{h}</th>)}</tr></thead>
+      <tbody>{filtradas.length===0?<tr><td colSpan={8} style={{padding:20,textAlign:"center",color:"#adb5bd"}}>Sin acciones</td></tr>:filtradas.map(a=>{const est=getEstado(a);const s=estadoStyle(est);const venc=a.fecha_vencimiento?new Date(a.fecha_vencimiento):null;return <tr key={a.id} style={{borderBottom:"1px solid #f8f9fa"}}>
+        <td style={{padding:"8px 10px",color:"#adb5bd",fontWeight:600}}>#{a.numero}</td>
+        <td style={{padding:"8px 10px",color:"#adb5bd"}}>{a.fecha_carga?new Date(a.fecha_carga).toLocaleDateString("es-AR"):"—"}</td>
+        <td style={{padding:"8px 10px",maxWidth:110,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#6c757d"}}>{a.propiedad_nombre||"—"}</td>
+        <td style={{padding:"8px 10px",maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600}}>{a.descripcion}</td>
+        <td style={{padding:"8px 10px"}}><Av id={a.agente_id} size={22}/></td>
+        <td style={{padding:"8px 10px",color:est==="vencido"?"#dc3545":est==="proximo"?"#BA7517":"#6c757d",fontWeight:est==="vencido"||est==="proximo"?700:400}}>{venc?venc.toLocaleDateString("es-AR"):"—"}</td>
+        <td style={{padding:"8px 10px"}}><span style={{background:s.bg,color:s.color,borderRadius:4,padding:"2px 8px",fontWeight:700}}>{s.label}</span></td>
+        <td style={{padding:"8px 10px",display:"flex",gap:4}}>
+          <button className="btn btn-secondary" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditAcc(a);setModalEdit(true);}}>✏️</button>
+          <button style={{padding:"3px 8px",fontSize:11,borderRadius:6,border:"1px solid #f1aeb5",background:"#fff0f1",color:"#842029",cursor:"pointer"}} onClick={()=>del(a.id)}>🗑️</button>
+        </td>
+      </tr>;})}</tbody>
+    </table></div>
     {modal&&<Modal title="Nueva acción" onClose={()=>setModal(false)}><FormAccion propsFiltradas={propsFiltradas} agentes={agentes} acciones={acciones} onSave={()=>{setModal(false);onRefresh();toast("Acción registrada","success");}} onClose={()=>setModal(false)}/></Modal>}
     {modalEdit&&editAcc&&<Modal title="Editar acción" onClose={()=>{setModalEdit(false);setEditAcc(null);}}><FormAccionEdit accion={editAcc} propsFiltradas={propsFiltradas} agentes={agentes} onSave={()=>{setModalEdit(false);setEditAcc(null);onRefresh();toast("Acción actualizada","success");}} onClose={()=>{setModalEdit(false);setEditAcc(null);}}/></Modal>}
   </div>;
 }
-
 function FormAccion({propsFiltradas,agentes,acciones,onSave,onClose}){
   const maxNum=acciones&&acciones.length>0?Math.max(...acciones.map(a=>parseInt(a.numero)||0)):0;
   const [f,setF]=useState({fecha_carga:new Date().toISOString().slice(0,10),propiedad_id:"",propiedad_nombre:"",descripcion:"",agente_id:"",fecha_vencimiento:"",observaciones:""});
   const [saving,setSaving]=useState(false);
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
-  const handleSave=async()=>{
-    if(!f.descripcion.trim()){alert("La descripción es obligatoria");return;}
-    setSaving(true);
-    const{error}=await sb.from("acciones").insert({numero:maxNum+1,fecha_carga:f.fecha_carga,propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||null,descripcion:f.descripcion,agente_id:f.agente_id||null,fecha_vencimiento:f.fecha_vencimiento||null,fecha_cierre_real:null,observaciones:f.observaciones||null,created_at:new Date().toISOString()});
-    setSaving(false);
-    if(error){alert("Error: "+error.message);}else{onSave();}
-  };
+  const handleSave=async()=>{if(!f.descripcion.trim()){alert("La descripción es obligatoria");return;}setSaving(true);const{error}=await sb.from("acciones").insert({numero:maxNum+1,fecha_carga:f.fecha_carga,propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||null,descripcion:f.descripcion,agente_id:f.agente_id||null,fecha_vencimiento:f.fecha_vencimiento||null,fecha_cierre_real:null,observaciones:f.observaciones||null,created_at:new Date().toISOString()});setSaving(false);if(error){alert("Error: "+error.message);}else{onSave();}};
   return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
     <div className="form-group"><label>Fecha de carga *</label><input type="date" className="form-control" value={f.fecha_carga} onChange={e=>set("fecha_carga",e.target.value)}/></div>
     <div className="form-group"><label>Propiedad (CA / PU)</label><select className="form-control" value={f.propiedad_id} onChange={e=>{const p=propsFiltradas.find(x=>x.id===e.target.value);set("propiedad_id",e.target.value);set("propiedad_nombre",p?.nombre||"");}}><option value="">— Sin propiedad —</option>{propsFiltradas.sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>
@@ -1248,17 +1202,11 @@ function FormAccion({propsFiltradas,agentes,acciones,onSave,onClose}){
     <div style={{gridColumn:"1/-1",display:"flex",gap:8,justifyContent:"flex-end"}}><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?"Guardando...":"Guardar"}</button></div>
   </div>;
 }
-
 function FormAccionEdit({accion,propsFiltradas,agentes,onSave,onClose}){
   const [f,setF]=useState({...accion,fecha_carga:accion.fecha_carga?accion.fecha_carga.slice(0,10):"",fecha_vencimiento:accion.fecha_vencimiento?accion.fecha_vencimiento.slice(0,10):"",fecha_cierre_real:accion.fecha_cierre_real?accion.fecha_cierre_real.slice(0,10):"",observaciones:accion.observaciones||""});
   const [saving,setSaving]=useState(false);
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
-  const handleSave=async()=>{
-    setSaving(true);
-    const{error}=await sb.from("acciones").update({fecha_carga:f.fecha_carga||null,propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||null,descripcion:f.descripcion,agente_id:f.agente_id||null,fecha_vencimiento:f.fecha_vencimiento||null,fecha_cierre_real:f.fecha_cierre_real||null,observaciones:f.observaciones||null}).eq("id",accion.id);
-    setSaving(false);
-    if(error){alert("Error: "+error.message);}else{onSave();}
-  };
+  const handleSave=async()=>{setSaving(true);const{error}=await sb.from("acciones").update({fecha_carga:f.fecha_carga||null,propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||null,descripcion:f.descripcion,agente_id:f.agente_id||null,fecha_vencimiento:f.fecha_vencimiento||null,fecha_cierre_real:f.fecha_cierre_real||null,observaciones:f.observaciones||null}).eq("id",accion.id);setSaving(false);if(error){alert("Error: "+error.message);}else{onSave();}};
   return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
     <div className="form-group"><label>Fecha de carga</label><input type="date" className="form-control" value={f.fecha_carga} onChange={e=>set("fecha_carga",e.target.value)}/></div>
     <div className="form-group"><label>Propiedad (CA / PU)</label><select className="form-control" value={f.propiedad_id||""} onChange={e=>{const p=propsFiltradas.find(x=>x.id===e.target.value);set("propiedad_id",e.target.value);set("propiedad_nombre",p?.nombre||"");}}><option value="">— Sin propiedad —</option>{propsFiltradas.sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>
@@ -1270,7 +1218,6 @@ function FormAccionEdit({accion,propsFiltradas,agentes,onSave,onClose}){
     <div style={{gridColumn:"1/-1",display:"flex",gap:8,justifyContent:"flex-end"}}><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?"Guardando...":"Guardar"}</button></div>
   </div>;
 }
-
 function ClientesPage({clientes,onRefresh,toast}){
   const [modal,setModal]=useState(false);const [edit,setEdit]=useState(null);const [busqueda,setBusqueda]=useState("");
   const filtrados=clientes.filter(c=>!busqueda||c.nombre?.toLowerCase().includes(busqueda.toLowerCase())||c.telefono?.includes(busqueda)||c.email?.toLowerCase().includes(busqueda.toLowerCase()));
@@ -1455,7 +1402,6 @@ const [clientes,setClientes]=useState(CLIENTES_INICIAL);
               sb.from("visitas").select("*").order("fecha",{ascending:false}),
               sb.from("metricas_portales").select("*").order("anio").order("mes"),
               sb.from("clientes").select("*").order("nombre"),
-      sb.from("acciones").select("*").order("created_at",{ascending:false}),
               sb.from("agentes").select("*").order("nombre"),
             ]);
             const backup={
