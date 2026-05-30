@@ -1167,7 +1167,8 @@ function OtrasAccionesPage({acciones,props,agentes,onRefresh,toast}){
       {[["abiertos","Abiertas"],["cerrados","Cerradas"],["todos","Todas"]].map(([v,l])=><button key={v} onClick={()=>setFEstado(v)} style={{padding:"3px 12px",borderRadius:6,border:`2px solid ${fEstado===v?"#2563eb":"#dee2e6"}`,background:fEstado===v?"#EEF3FF":"#fff",color:fEstado===v?"#2563eb":"#6c757d",fontWeight:fEstado===v?700:400,fontSize:12}}>{l}</button>)}
       <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar..." style={{padding:"5px 10px",borderRadius:6,border:"1.5px solid #dee2e6",fontSize:12,marginLeft:"auto",minWidth:160}}/>
     </div></div>
-    <div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
+
+    <div className="desktop-only"><div className="card" style={{padding:0,overflow:"hidden"}}><table style={{width:"100%",fontSize:12}}>
       <thead><tr style={{background:"#f8f9fc"}}>{["N°","Fecha","Propiedad","Descripción","Agente","Vencimiento","Estado",""].map(h=><th key={h} style={{padding:"9px 10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0",textAlign:"left"}}>{h}</th>)}</tr></thead>
       <tbody>{filtradas.length===0?<tr><td colSpan={8} style={{padding:20,textAlign:"center",color:"#adb5bd"}}>Sin acciones</td></tr>:filtradas.map(a=>{const est=getEstado(a);const s=estadoStyle(est);const venc=a.fecha_vencimiento?new Date(a.fecha_vencimiento):null;return <tr key={a.id} style={{borderBottom:"1px solid #f8f9fa"}}>
         <td style={{padding:"8px 10px",color:"#adb5bd",fontWeight:600}}>#{a.numero}</td>
@@ -1182,7 +1183,28 @@ function OtrasAccionesPage({acciones,props,agentes,onRefresh,toast}){
           <button style={{padding:"3px 8px",fontSize:11,borderRadius:6,border:"1px solid #f1aeb5",background:"#fff0f1",color:"#842029",cursor:"pointer"}} onClick={()=>del(a.id)}>🗑️</button>
         </td>
       </tr>;})}</tbody>
-    </table></div>
+    </table></div></div>
+
+    <div className="mobile-only">{filtradas.length===0?<p style={{color:"#adb5bd",fontSize:12,textAlign:"center",padding:20}}>Sin acciones</p>:filtradas.map(a=>{const est=getEstado(a);const s=estadoStyle(est);const venc=a.fecha_vencimiento?new Date(a.fecha_vencimiento):null;return <div key={a.id} className="card" style={{marginBottom:8,padding:"10px 12px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+        <div style={{flex:1,minWidth:0}}>
+          <p style={{margin:0,fontWeight:700,fontSize:13,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.descripcion}</p>
+          <p style={{margin:"2px 0 0",fontSize:11,color:"#adb5bd"}}>{a.propiedad_nombre||"Sin propiedad"} · #{a.numero}</p>
+        </div>
+        <Av id={a.agente_id} size={28}/>
+      </div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <span style={{background:s.bg,color:s.color,borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{s.label}</span>
+          <p style={{margin:"4px 0 0",fontSize:11,color:"#adb5bd"}}>{a.fecha_carga?new Date(a.fecha_carga).toLocaleDateString("es-AR"):"—"}{venc?" · Vence: "+venc.toLocaleDateString("es-AR"):""}</p>
+        </div>
+        <div style={{display:"flex",gap:4}}>
+          <button className="btn btn-secondary" style={{padding:"4px 12px",fontSize:12}} onClick={()=>{setEditAcc(a);setModalEdit(true);}}>✏️</button>
+          <button style={{padding:"4px 10px",fontSize:12,borderRadius:6,border:"1px solid #f1aeb5",background:"#fff0f1",color:"#842029",cursor:"pointer"}} onClick={()=>del(a.id)}>🗑️</button>
+        </div>
+      </div>
+    </div>;})}</div>
+
     {modal&&<Modal title="Nueva acción" onClose={()=>setModal(false)}><FormAccion propsFiltradas={propsFiltradas} agentes={agentes} acciones={acciones} onSave={()=>{setModal(false);onRefresh();toast("Acción registrada","success");}} onClose={()=>setModal(false)}/></Modal>}
     {modalEdit&&editAcc&&<Modal title="Editar acción" onClose={()=>{setModalEdit(false);setEditAcc(null);}}><FormAccionEdit accion={editAcc} propsFiltradas={propsFiltradas} agentes={agentes} onSave={()=>{setModalEdit(false);setEditAcc(null);onRefresh();toast("Acción actualizada","success");}} onClose={()=>{setModalEdit(false);setEditAcc(null);}}/></Modal>}
   </div>;
