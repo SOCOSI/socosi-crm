@@ -384,7 +384,7 @@ function FormMetrica({propiedades,onSave,onClose}){
   </div></div>;
 }
 
-function Dashboard({props,leads,visitas,metricas,onNav,activeTab}){
+function Dashboard({props,leads,visitas,metricas,acciones,onNav,activeTab}){
   const isPanelControl=!activeTab||activeTab==="panel-control";
   const cnt=(e)=>props.filter(p=>p.estado===e).length;
   const totalV=metricas.reduce((s,m)=>s+(m.zonaprop||0)+(m.argenprop||0)+(m.mercadolibre||0),0);
@@ -447,6 +447,28 @@ function Dashboard({props,leads,visitas,metricas,onNav,activeTab}){
       </div>}
       {propsVenciendoProx15.length===0&&propsProxVencer.length===0&&<p style={{color:"#adb5bd",fontSize:12}}>Sin alertas de autorización</p>}
     </div>
+    
+    {(()=>{
+      const hoy=new Date();hoy.setHours(0,0,0,0);
+      const acAbiertas=(acciones||[]).filter(a=>!a.fecha_cierre_real);
+      const acVencidas=acAbiertas.filter(a=>a.fecha_vencimiento&&new Date(a.fecha_vencimiento)<hoy);
+      const acProx=acAbiertas.filter(a=>{if(!a.fecha_vencimiento)return false;const d=new Date(a.fecha_vencimiento);return d>=hoy&&d<=new Date(hoy.getTime()+7*24*60*60*1000);});
+      if(acAbiertas.length===0)return null;
+      return <div className="card" style={{marginBottom:"1rem"}}>
+        <p style={{fontWeight:700,fontSize:14,margin:"0 0 10px"}}>Otras Acciones — PENDIENTES</p>
+        {acVencidas.length>0&&<p style={{color:"#dc3545",fontWeight:700,fontSize:12,margin:"0 0 6px"}}>⚠ VENCIDAS: {acVencidas.length}</p>}
+        {acProx.length>0&&<p style={{color:"#BA7517",fontWeight:700,fontSize:12,margin:"0 0 6px"}}>⏰ Próx 7 días: {acProx.length}</p>}
+        <table style={{width:"100%",fontSize:12}}><thead><tr style={{borderBottom:"2px solid #f0f2f5"}}>{["N°","Descripción","Agente","Vencimiento","Estado"].map(h=><th key={h} style={{padding:"5px 8px",color:"#6c757d",fontWeight:600,textAlign:"left"}}>{h}</th>)}</tr></thead>
+        <tbody>{acAbiertas.slice(0,5).map(a=>{const venc=a.fecha_vencimiento?new Date(a.fecha_vencimiento):null;const vencida=venc&&venc<hoy;const proxima=venc&&venc>=hoy&&venc<=new Date(hoy.getTime()+7*24*60*60*1000);return <tr key={a.id} style={{borderBottom:"1px solid #f8f9fa"}}>
+          <td style={{padding:"5px 8px",color:"#adb5bd"}}>#{a.numero}</td>
+          <td style={{padding:"5px 8px",maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.descripcion}</td>
+          <td style={{padding:"5px 8px"}}><Av id={a.agente_id} size={20}/></td>
+          <td style={{padding:"5px 8px",color:vencida?"#dc3545":proxima?"#BA7517":"#6c757d",fontWeight:vencida||proxima?700:400}}>{venc?venc.toLocaleDateString("es-AR"):"—"}</td>
+          <td style={{padding:"5px 8px"}}><span style={{background:vencida?"#ffe0e3":proxima?"#FFF3CD":"#e8f5e9",color:vencida?"#842029":proxima?"#856404":"#0A5C34",borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{vencida?"VENCIDA":proxima?"PRÓXIMA":"ABIERTA"}</span></td>
+        </tr>;})}</tbody></table>
+        {acAbiertas.length>5&&<p style={{fontSize:11,color:"#adb5bd",margin:"6px 0 0",textAlign:"right"}}>+{acAbiertas.length-5} más</p>}
+      </div>;
+    })()}
     <div className="card" style={{marginBottom:"1rem"}}>
       <p style={{fontWeight:700,fontSize:14,margin:"0 0 10px"}}>Estado de Visitas — ABIERTAS / RESERVA</p>
       {visitasAbiertas.length===0?<p style={{color:"#adb5bd",fontSize:12}}>Sin visitas abiertas</p>:
@@ -1115,6 +1137,140 @@ function FormCliente({cliente,onSave,onClose}){
     <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?"Guardando...":"Guardar"}</button>
   </div></div>;
 }
+
+function OtrasAccionesPage({acciones,props,agentes,onRefresh,toast}){
+  const [modal,setModal]=useState(false);
+  const [editAcc,setEditAcc]=useState(null);
+  const [modalEdit,setModalEdit]=useState(false);
+  const [fEstado,setFEstado]=useState("abiertos");
+  const [busqueda,setBusqueda]=useState("");
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+
+  const propsFiltradas=props.filter(p=>p.estado==="CA"||p.estado==="PU");
+
+  const getEstado=(a)=>{
+    if(a.fecha_cierre_real)return "cerrado";
+    if(!a.fecha_vencimiento)return "abierto";
+    const v=new Date(a.fecha_vencimiento);v.setHours(0,0,0,0);
+    if(v<hoy)return "vencido";
+    if(v<=new Date(hoy.getTime()+7*24*60*60*1000))return "proximo";
+    return "abierto";
+  };
+
+  const filtradas=[...acciones].filter(a=>{
+    const est=getEstado(a);
+    if(fEstado==="abiertos"&&est==="cerrado")return false;
+    if(fEstado==="cerrados"&&est!=="cerrado")return false;
+    if(busqueda){const q=busqueda.toLowerCase();if(!(a.descripcion||"").toLowerCase().includes(q)&&!(a.propiedad_nombre||"").toLowerCase().includes(q))return false;}
+    return true;
+  });
+
+  const estadoStyle=(est)=>{
+    if(est==="cerrado")return {bg:"#e8f5e9",color:"#0A5C34",label:"CERRADO"};
+    if(est==="vencido")return {bg:"#ffe0e3",color:"#842029",label:"VENCIDO"};
+    if(est==="proximo")return {bg:"#FFF3CD",color:"#856404",label:"PRÓXIMO"};
+    return {bg:"#EEF3FF",color:"#2563eb",label:"ABIERTO"};
+  };
+
+  const del=async(id)=>{if(!confirm("⚠️ ¿Eliminar esta acción? Los datos NO se recuperan."))return;const{error}=await sb.from("acciones").delete().eq("id",id);if(error){alert(error.message);}else{onRefresh();toast("Acción eliminada","success");}};
+
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"1rem"}}>
+      <h2 style={{fontSize:21,fontWeight:800,margin:0}}>Otras Acciones</h2>
+      <div style={{display:"flex",gap:8,alignItems:"center"}}><Logo size={28}/><button className="btn btn-primary" onClick={()=>{setEditAcc(null);setModal(true);}}>+ Nueva acción</button></div>
+    </div>
+    <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:"1.5rem"}}>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
+        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>TOTAL ABIERTAS</p>
+        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#2563eb"}}>{acciones.filter(a=>!a.fecha_cierre_real).length}</p>
+      </div>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
+        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>VENCIDAS</p>
+        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#dc3545"}}>{acciones.filter(a=>getEstado(a)==="vencido").length}</p>
+      </div>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
+        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>PRÓX. 7 DÍAS</p>
+        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#BA7517"}}>{acciones.filter(a=>getEstado(a)==="proximo").length}</p>
+      </div>
+      <div className="card" style={{padding:"10px 16px",flex:"0 0 auto"}}>
+        <p style={{margin:0,fontSize:11,color:"#6c757d",fontWeight:600}}>CERRADAS</p>
+        <p style={{margin:0,fontSize:22,fontWeight:800,color:"#1D9E75"}}>{acciones.filter(a=>a.fecha_cierre_real).length}</p>
+      </div>
+    </div>
+    <div className="card" style={{marginBottom:"1rem",padding:"10px 14px"}}>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={{fontSize:12,color:"#6c757d",fontWeight:700}}>Ver:</span>
+        {[["abiertos","Abiertas"],["cerrados","Cerradas"],["todos","Todas"]].map(([v,l])=><button key={v} onClick={()=>setFEstado(v)} style={{padding:"3px 12px",borderRadius:6,border:`2px solid ${fEstado===v?"#2563eb":"#dee2e6"}`,background:fEstado===v?"#EEF3FF":"#fff",color:fEstado===v?"#2563eb":"#6c757d",fontWeight:fEstado===v?700:400,fontSize:12}}>{l}</button>)}
+        <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar..." style={{padding:"5px 10px",borderRadius:6,border:"1.5px solid #dee2e6",fontSize:12,marginLeft:"auto",minWidth:160}}/>
+      </div>
+    </div>
+    <div className="card" style={{padding:0,overflow:"hidden"}}>
+      <table style={{width:"100%",fontSize:12}}>
+        <thead><tr style={{background:"#f8f9fc"}}>{["N°","Fecha","Propiedad","Descripción","Agente","Vencimiento","Estado",""].map(h=><th key={h} style={{padding:"9px 10px",color:"#6c757d",fontWeight:600,borderBottom:"2px solid #e4e8f0",textAlign:"left"}}>{h}</th>)}</tr></thead>
+        <tbody>{filtradas.length===0?<tr><td colSpan={8} style={{padding:20,textAlign:"center",color:"#adb5bd"}}>Sin acciones</td></tr>:filtradas.map(a=>{const est=getEstado(a);const s=estadoStyle(est);const venc=a.fecha_vencimiento?new Date(a.fecha_vencimiento):null;return <tr key={a.id} style={{borderBottom:"1px solid #f8f9fa"}}>
+          <td style={{padding:"8px 10px",color:"#adb5bd",fontWeight:600}}>#{a.numero}</td>
+          <td style={{padding:"8px 10px",color:"#adb5bd"}}>{a.fecha_carga?new Date(a.fecha_carga).toLocaleDateString("es-AR"):"—"}</td>
+          <td style={{padding:"8px 10px",maxWidth:110,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#6c757d"}}>{a.propiedad_nombre||"—"}</td>
+          <td style={{padding:"8px 10px",maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600}}>{a.descripcion}</td>
+          <td style={{padding:"8px 10px"}}><Av id={a.agente_id} size={22}/></td>
+          <td style={{padding:"8px 10px",color:est==="vencido"?"#dc3545":est==="proximo"?"#BA7517":"#6c757d",fontWeight:est==="vencido"||est==="proximo"?700:400}}>{venc?venc.toLocaleDateString("es-AR"):"—"}</td>
+          <td style={{padding:"8px 10px"}}><span style={{background:s.bg,color:s.color,borderRadius:4,padding:"2px 8px",fontWeight:700}}>{s.label}</span></td>
+          <td style={{padding:"8px 10px",display:"flex",gap:4}}>
+            <button className="btn btn-secondary" style={{padding:"3px 8px",fontSize:11}} onClick={()=>{setEditAcc(a);setModalEdit(true);}}>✏️</button>
+            <button style={{padding:"3px 8px",fontSize:11,borderRadius:6,border:"1px solid #f1aeb5",background:"#fff0f1",color:"#842029",cursor:"pointer"}} onClick={()=>del(a.id)}>🗑️</button>
+          </td>
+        </tr>;})}</tbody>
+      </table>
+    </div>
+    {modal&&<Modal title="Nueva acción" onClose={()=>setModal(false)}><FormAccion propsFiltradas={propsFiltradas} agentes={agentes} acciones={acciones} onSave={()=>{setModal(false);onRefresh();toast("Acción registrada","success");}} onClose={()=>setModal(false)}/></Modal>}
+    {modalEdit&&editAcc&&<Modal title="Editar acción" onClose={()=>{setModalEdit(false);setEditAcc(null);}}><FormAccionEdit accion={editAcc} propsFiltradas={propsFiltradas} agentes={agentes} onSave={()=>{setModalEdit(false);setEditAcc(null);onRefresh();toast("Acción actualizada","success");}} onClose={()=>{setModalEdit(false);setEditAcc(null);}}/></Modal>}
+  </div>;
+}
+
+function FormAccion({propsFiltradas,agentes,acciones,onSave,onClose}){
+  const maxNum=acciones&&acciones.length>0?Math.max(...acciones.map(a=>parseInt(a.numero)||0)):0;
+  const [f,setF]=useState({fecha_carga:new Date().toISOString().slice(0,10),propiedad_id:"",propiedad_nombre:"",descripcion:"",agente_id:"",fecha_vencimiento:"",observaciones:""});
+  const [saving,setSaving]=useState(false);
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const handleSave=async()=>{
+    if(!f.descripcion.trim()){alert("La descripción es obligatoria");return;}
+    setSaving(true);
+    const{error}=await sb.from("acciones").insert({numero:maxNum+1,fecha_carga:f.fecha_carga,propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||null,descripcion:f.descripcion,agente_id:f.agente_id||null,fecha_vencimiento:f.fecha_vencimiento||null,fecha_cierre_real:null,observaciones:f.observaciones||null,created_at:new Date().toISOString()});
+    setSaving(false);
+    if(error){alert("Error: "+error.message);}else{onSave();}
+  };
+  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+    <div className="form-group"><label>Fecha de carga *</label><input type="date" className="form-control" value={f.fecha_carga} onChange={e=>set("fecha_carga",e.target.value)}/></div>
+    <div className="form-group"><label>Propiedad (CA / PU)</label><select className="form-control" value={f.propiedad_id} onChange={e=>{const p=propsFiltradas.find(x=>x.id===e.target.value);set("propiedad_id",e.target.value);set("propiedad_nombre",p?.nombre||"");}}><option value="">— Sin propiedad —</option>{propsFiltradas.sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>
+    <div className="form-group" style={{gridColumn:"1/-1"}}><label>Descripción *</label><textarea className="form-control" rows={3} value={f.descripcion} onChange={e=>set("descripcion",e.target.value)} placeholder="Descripción de la acción a tomar..."/></div>
+    <div className="form-group"><label>Agente responsable</label><select className="form-control" value={f.agente_id} onChange={e=>set("agente_id",e.target.value)}><option value="">— Sin asignar —</option>{agentes.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+    <div className="form-group"><label>Fecha de vencimiento</label><input type="date" className="form-control" value={f.fecha_vencimiento} onChange={e=>set("fecha_vencimiento",e.target.value)}/></div>
+    <div style={{gridColumn:"1/-1",display:"flex",gap:8,justifyContent:"flex-end"}}><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?"Guardando...":"Guardar"}</button></div>
+  </div>;
+}
+
+function FormAccionEdit({accion,propsFiltradas,agentes,onSave,onClose}){
+  const [f,setF]=useState({...accion,fecha_carga:accion.fecha_carga?accion.fecha_carga.slice(0,10):"",fecha_vencimiento:accion.fecha_vencimiento?accion.fecha_vencimiento.slice(0,10):"",fecha_cierre_real:accion.fecha_cierre_real?accion.fecha_cierre_real.slice(0,10):"",observaciones:accion.observaciones||""});
+  const [saving,setSaving]=useState(false);
+  const set=(k,v)=>setF(p=>({...p,[k]:v}));
+  const handleSave=async()=>{
+    setSaving(true);
+    const{error}=await sb.from("acciones").update({fecha_carga:f.fecha_carga||null,propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||null,descripcion:f.descripcion,agente_id:f.agente_id||null,fecha_vencimiento:f.fecha_vencimiento||null,fecha_cierre_real:f.fecha_cierre_real||null,observaciones:f.observaciones||null}).eq("id",accion.id);
+    setSaving(false);
+    if(error){alert("Error: "+error.message);}else{onSave();}
+  };
+  return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"1rem"}}>
+    <div className="form-group"><label>Fecha de carga</label><input type="date" className="form-control" value={f.fecha_carga} onChange={e=>set("fecha_carga",e.target.value)}/></div>
+    <div className="form-group"><label>Propiedad (CA / PU)</label><select className="form-control" value={f.propiedad_id||""} onChange={e=>{const p=propsFiltradas.find(x=>x.id===e.target.value);set("propiedad_id",e.target.value);set("propiedad_nombre",p?.nombre||"");}}><option value="">— Sin propiedad —</option>{propsFiltradas.sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(p=><option key={p.id} value={p.id}>{p.nombre}</option>)}</select></div>
+    <div className="form-group" style={{gridColumn:"1/-1"}}><label>Descripción *</label><textarea className="form-control" rows={3} value={f.descripcion} onChange={e=>set("descripcion",e.target.value)}/></div>
+    <div className="form-group"><label>Agente responsable</label><select className="form-control" value={f.agente_id||""} onChange={e=>set("agente_id",e.target.value)}><option value="">— Sin asignar —</option>{agentes.map(a=><option key={a.id} value={a.id}>{a.nombre}</option>)}</select></div>
+    <div className="form-group"><label>Fecha de vencimiento</label><input type="date" className="form-control" value={f.fecha_vencimiento} onChange={e=>set("fecha_vencimiento",e.target.value)}/></div>
+    <div className="form-group" style={{background:"#f0faf5",padding:"10px 12px",borderRadius:8,border:"1.5px solid #A5D6A7"}}><label style={{color:"#0A5C34",fontWeight:700}}>✅ Fecha de cierre real</label><input type="date" className="form-control" value={f.fecha_cierre_real} onChange={e=>set("fecha_cierre_real",e.target.value)}/></div>
+    <div className="form-group" style={{gridColumn:"1/-1"}}><label>Observaciones de cierre</label><textarea className="form-control" rows={2} value={f.observaciones} onChange={e=>set("observaciones",e.target.value)} placeholder="Opcional..."/></div>
+    <div style={{gridColumn:"1/-1",display:"flex",gap:8,justifyContent:"flex-end"}}><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving?"Guardando...":"Guardar"}</button></div>
+  </div>;
+}
+
 function ClientesPage({clientes,onRefresh,toast}){
   const [modal,setModal]=useState(false);const [edit,setEdit]=useState(null);const [busqueda,setBusqueda]=useState("");
   const filtrados=clientes.filter(c=>!busqueda||c.nombre?.toLowerCase().includes(busqueda.toLowerCase())||c.telefono?.includes(busqueda)||c.email?.toLowerCase().includes(busqueda.toLowerCase()));
@@ -1217,6 +1373,7 @@ function App(){
   const [agentes,setAgentes]=useState([{id:"MG",nombre:"Marcela García",color:"#1D9E75"},{id:"FS",nombre:"Federico Socolovsky",color:"#2563eb"},{id:"DM",nombre:"Damián Medina",color:"#D85A30"},{id:"DGS",nombre:"Gastón Socolovsky",color:"#D4537E"},{id:"JMS",nombre:"Julián Socolovsky",color:"#7F77DD"}]);
   const CLIENTES_INICIAL=[{"id": "10001", "nombre": "Vanesa Edith Colombo", "telefono": null, "email": "psivcolombo@gmail.com", "recomendado_por": null, "observaciones": null}, {"id": "10002", "nombre": "Flavia Enzetti", "telefono": null, "email": null}, {"id": "10003", "nombre": "Mario Juan Salto", "telefono": "+54 9 2994 24-6296", "email": null}, {"id": "10004", "nombre": "Delia Krivoruchco", "telefono": "+54 9 11 2455-1916", "email": null}, {"id": "10005", "nombre": "Hernán Laskowski", "telefono": null, "email": null}, {"id": "10006", "nombre": "Mariano Pablo Socolovsky", "telefono": "11 6588-1565", "email": null}, {"id": "10007", "nombre": "Matias Rothkopf", "telefono": null, "email": null}, {"id": "10008", "nombre": "Daniela", "telefono": null, "email": null}, {"id": "10009", "nombre": "Mirta Haydee Krivoruchco", "telefono": "+54 9 11 4945-7917", "email": null}, {"id": "10010", "nombre": "Leonard Martinez", "telefono": null, "email": null}, {"id": "10014", "nombre": "Perla Samudio Martinez", "telefono": null, "email": "perlasamudio@hotmail.com"}, {"id": "10015", "nombre": "Carlos Arrichetta", "telefono": "+54 9 11 2281-2456", "email": null}, {"id": "10016", "nombre": "Ana Bernstein", "telefono": null, "email": null}, {"id": "10018", "nombre": "Diego Gil", "telefono": "+54 9 11 5488-0014", "email": null}, {"id": "10019", "nombre": "Celia Scorza", "telefono": "+54 9 11 3505-7767", "email": null}, {"id": "10020", "nombre": "Maria Carmen Ferrari", "telefono": "+54 9 11 4437-6332", "email": null}, {"id": "10022", "nombre": "Diego Salgueiro", "telefono": null, "email": "salgueirodiego@hotmail.com"}, {"id": "10023", "nombre": "Paola Randazzo", "telefono": "+54 9 11 5335-3362", "email": null}, {"id": "10024", "nombre": "Edgar Lincuez", "telefono": "+54 9 11 5813-6505", "email": null}, {"id": "10026", "nombre": "Hernan Abeles", "telefono": "+54 9 11 5508-9401", "email": null}, {"id": "10027", "nombre": "Tomás Cohrs", "telefono": null, "email": "tomas.cohrs@tradecos.net"}, {"id": "10029", "nombre": "Ana Bondaruk", "telefono": "+54 9 11 3583-1628", "email": null}, {"id": "10032", "nombre": "Leila Bonomi", "telefono": "+54 9 11 4418-0545", "email": null}, {"id": "10033", "nombre": "Franco Luneti", "telefono": "+54 9 11 2667-7719", "email": null}, {"id": "10034", "nombre": "Daniel Villares", "telefono": null, "email": "laplatadvdvirgen@hotmail.com"}, {"id": "10036", "nombre": "Pedro Salto", "telefono": "+54 9 2214 85-6407", "email": null}, {"id": "10037", "nombre": "Valeria Devicienti", "telefono": "+54 9 11 5797-8877", "email": null}, {"id": "10039", "nombre": "María Eugenia Petersen", "telefono": "+54 9 11 6793-3650", "email": null}, {"id": "10051", "nombre": "Diego Botana", "telefono": "+54 9 11 5781-3000", "email": null}, {"id": "10059", "nombre": "Cecilia Morelli", "telefono": "+54 9 11 5644-1340", "email": null}, {"id": "10067", "nombre": "Lourdes Doucet", "telefono": "+54 9 11 6158-0715", "email": null}, {"id": "10076", "nombre": "Patricio Maraniello", "telefono": null, "email": "pmaraniello@gmail.com"}, {"id": "10077", "nombre": "Hebe Spinelli", "telefono": "+54 9 11 6668-1699", "email": null}, {"id": "10078", "nombre": "Carlos Banchik", "telefono": null, "email": "susanaelsztein@gmail.com"}, {"id": "10082", "nombre": "Edgardo Bruscaglia", "telefono": null, "email": "ebruscaglia@hotmail.com"}, {"id": "10083", "nombre": "Rafael Carpinetti", "telefono": "(11) 3321-7912", "email": null}, {"id": "10086", "nombre": "Lucía Mattioli", "telefono": "+54 9 11 3461-2495", "email": null}, {"id": "10087", "nombre": "Paula Ruggieri", "telefono": "+54 9 11 5837-5690", "email": null}, {"id": "10089", "nombre": "Carlos Cynowikz", "telefono": "+54 9 11 4050-8381", "email": null}, {"id": "10092", "nombre": "Johny GEBA", "telefono": "+54 9 11 5468-2635", "email": null}, {"id": "10093", "nombre": "Marcela Napoleone", "telefono": "54 9 11 6250-7600", "email": null}, {"id": "10094", "nombre": "Leandro Collar", "telefono": "54 9 11 3321-7948", "email": null}, {"id": "10096", "nombre": "Pedro Leandro Zanni", "telefono": "48140907", "email": null}, {"id": "10097", "nombre": "Maria Del Pilar", "telefono": "+54 9 11 6156-1221", "email": null}, {"id": "10099", "nombre": "Fernando amigo Diego Botana", "telefono": "+54 9 11 4986-9292", "email": null}, {"id": "10101", "nombre": "Carlos Mechetti", "telefono": "+54 9 11 5329-0783", "email": null}, {"id": "10102", "nombre": "Geraldina Mosquera", "telefono": null, "email": "geraldinamosquera84@gmail.com"}, {"id": "10103", "nombre": "Mario Dalessio", "telefono": null, "email": "mdalessio@mariodalessio.com.ar"}, {"id": "10105", "nombre": "Ana García", "telefono": "+54 9 2995 16-6244", "email": null}, {"id": "10106", "nombre": "Francisco Socolovsky", "telefono": "+54 9 11 3032-1107", "email": null}, {"id": "10107", "nombre": "Federico Socolovsky", "telefono": "11 24749000", "email": null}, {"id": "10108", "nombre": "Valentina Socolovsky", "telefono": "+54 9 11 3109-1703", "email": null}, {"id": "10112", "nombre": "Fernando Nievas", "telefono": "+54 9 11 2460-0842", "email": null}, {"id": "10113", "nombre": "Gonzalo Valentinuzzi", "telefono": "+54 9 11 6097-4999", "email": null}, {"id": "10114", "nombre": "Delia Camps (Tía Delia de Borches)", "telefono": null, "email": null}, {"id": "10115", "nombre": "Maximiliano Cascon", "telefono": "+54 9 11 4408-3292", "email": "mcascon@plustime.com.ar"}, {"id": "10117", "nombre": "Graciela Camps (Mamá Borches)", "telefono": null, "email": null}, {"id": "10118", "nombre": "Monica Teti", "telefono": null, "email": "lic_monicateti@yahoo.com"}, {"id": "10120", "nombre": "Hernan Borches", "telefono": null, "email": null}, {"id": "10121", "nombre": "Miguel Gimenez", "telefono": "342 503-2532", "email": null}, {"id": "10122", "nombre": "Fernanda Raposeiras", "telefono": "+54 9 11 4888-4150", "email": null}, {"id": "10123", "nombre": "Solange Debuchy", "telefono": "+54 9 11 3168-6464", "email": null}, {"id": "10124", "nombre": "Verónica Re", "telefono": "+54 9 11 2162-8532", "email": null}, {"id": "10131", "nombre": "Miriam Domini", "telefono": "+54 9 11 4673-6650", "email": null}, {"id": "10135", "nombre": "Adriana Fajardo Moreno", "telefono": "+54 9 11 4190-1737", "email": null}, {"id": "10137", "nombre": "Alejandro Caffarini", "telefono": "+34 607 73 31 89", "email": null}, {"id": "10138", "nombre": "Emilce Maury", "telefono": "+54 9 387 501-9796", "email": null}, {"id": "10139", "nombre": "Hernan Podolsky", "telefono": "+54 9 11 5730-0097", "email": null}, {"id": "10148", "nombre": "Liliana (amiga Vero)", "telefono": "+54 9 11 4070-7481", "email": null}, {"id": "10167", "nombre": "Guillermo Svarc", "telefono": "11-5646-9995", "email": null}];
 const [clientes,setClientes]=useState(CLIENTES_INICIAL);
+  const [acciones,setAcciones]=useState([]);
   const [loading,setLoading]=useState(false);
   const [toastState,setToastState]=useState(null);
   const [dashTab,setDashTab]=useState("panel");const [user,setUser]=useState(null);
@@ -1244,12 +1401,13 @@ const [clientes,setClientes]=useState(CLIENTES_INICIAL);
   };
   const loadAll=useCallback(async()=>{
     setLoading(true);
-    const [r1,r3,r4,r5,r6]=await Promise.all([
+    const [r1,r3,r4,r5,r6,r7]=await Promise.all([
       sb.from("propiedades").select("*").order("id"),
       sb.from("visitas").select("*").order("fecha",{ascending:false}),
       sb.from("metricas_portales").select("*").order("anio").order("mes"),
       sb.from("agentes").select("*").order("nombre"),
       sb.from("clientes").select("*").order("nombre"),
+      sb.from("acciones").select("*").order("created_at",{ascending:false}),
     ]);
     const leadsAll=await fetchAllLeads();
     if(r1.data&&r1.data.length>0)setProps(r1.data);
@@ -1258,6 +1416,7 @@ const [clientes,setClientes]=useState(CLIENTES_INICIAL);
     if(r4.data&&r4.data.length>0)setMetricas(r4.data);
     if(r5.data&&r5.data.length>0)setAgentes(r5.data);
     if(r6.data&&r6.data.length>0)setClientes(r6.data);
+    if(r7.data)setAcciones(r7.data);
     setLoading(false);
   },[]);
 
@@ -1270,7 +1429,7 @@ const [clientes,setClientes]=useState(CLIENTES_INICIAL);
     {id:"leads",icon:"👥",label:"Contactos"},
     {id:"visitas",icon:"📅",label:"Visitas"},
     {id:"analytics",icon:"📈",label:"Analytics",sub:[{id:"analytics-kpis",label:"KPIs Venta"},{id:"analytics-cartera",label:"Cartera"},{id:"analytics-agentes",label:"Agentes"}]},
-    {id:"clientes",icon:"🏛️",label:"Clientes"}
+    {id:"otras-acciones",icon:"✅",label:"Otras Acciones"},{id:"clientes",icon:"🏛️",label:"Clientes"}
   ];
   if(authLoading)return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#f4f6fa"}}><div style={{fontSize:16,color:"#6c757d"}}>Cargando...</div></div>;
   if(!user)return <LoginScreen onLogin={()=>loadAll()}/>;
@@ -1296,6 +1455,7 @@ const [clientes,setClientes]=useState(CLIENTES_INICIAL);
               sb.from("visitas").select("*").order("fecha",{ascending:false}),
               sb.from("metricas_portales").select("*").order("anio").order("mes"),
               sb.from("clientes").select("*").order("nombre"),
+      sb.from("acciones").select("*").order("created_at",{ascending:false}),
               sb.from("agentes").select("*").order("nombre"),
             ]);
             const backup={
@@ -1331,7 +1491,7 @@ const [clientes,setClientes]=useState(CLIENTES_INICIAL);
     </nav>
     <main className="main-content" style={{marginLeft:210,flex:1,padding:"1.75rem 2.25rem",overflowY:"auto",minHeight:"100vh"}}>
       {loading?<Spin/>:<>
-        {(pagina==="panel-control"||pagina==="estado-propiedades")&&<Dashboard props={props} leads={leads} visitas={visitas} metricas={metricas} onNav={goNav} activeTab={pagina}/>}
+        {(pagina==="panel-control"||pagina==="estado-propiedades")&&<Dashboard props={props} leads={leads} visitas={visitas} metricas={metricas} acciones={acciones} onNav={goNav} activeTab={pagina}/>}
         {pagina==="propiedades"&&!propSel&&<Propiedades props={props} agentes={agentes} clientes={clientes} onSelect={p=>setPropSel(p)} onRefresh={loadAll} toast={showToast} user={user}/>}
         {pagina==="propiedades"&&propSel&&<PropDetalle prop={propSel} leads={leads} visitas={visitas} metricas={metricas} agentes={agentes} onBack={()=>setPropSel(null)} onRefresh={loadAll} toast={showToast}/>}
         {pagina==="leads"&&<LeadsPage leads={leads} props={props} agentes={agentes} onRefresh={loadAll} toast={showToast}/>}
@@ -1339,6 +1499,7 @@ const [clientes,setClientes]=useState(CLIENTES_INICIAL);
         {pagina==="metricas"&&<MetricasPage metricas={metricas} props={props} onRefresh={loadAll} toast={showToast}/>}
         {(pagina==="analytics"||pagina==="analytics-kpis"||pagina==="analytics-cartera"||pagina==="analytics-agentes")&&<Analytics props={props} leads={leads} visitas={visitas} metricas={metricas} agentes={agentes} onRefresh={loadAll} toast={showToast} initTab={pagina}/>}
         
+        {pagina==="otras-acciones"&&<OtrasAccionesPage acciones={acciones} props={props} agentes={agentes} onRefresh={loadAll} toast={showToast}/>}
         {pagina==="clientes"&&<ClientesPage clientes={clientes} onRefresh={loadAll} toast={showToast}/>}
       </>}
     </main>
