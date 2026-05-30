@@ -80,7 +80,7 @@ const SUPA_URL = "https://qrppoyijpqyghzvhndyv.supabase.co";
 const SUPA_KEY = "sb_publishable_JRBKomCsYV5HpCkzF6jiDg_eG29WkaF";
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 const ESTADOS={CA:{bg:"#FFF3CD",text:"#856404",dot:"#BA7517"},PU:{bg:"#D1F0E4",text:"#0A5C34",dot:"#1D9E75"},VE:{bg:"#E8E0F5",text:"#432874",dot:"#7F77DD"},TE:{bg:"#FFE0E3",text:"#842029",dot:"#C0392B"},NO:{bg:"#EBEBEB",text:"#495057",dot:"#888"}};
-const AC={MG:"#1D9E75",FS:"#2563eb",DM:"#D85A30",DGS:"#D4537E",JMS:"#7F77DD"};
+const AC={MG:"#AB47BC",FS:"#E53935",DM:"#D85A30",DGS:"#D4537E",JMS:"#1D9E75"};
 const fUSD=(n)=>n?`U$S ${Number(n).toLocaleString("es-AR")}`:"—";
 const fARS=(n)=>n?`$ ${Number(n).toLocaleString("es-AR")}`:"—";
 const fDate=(s)=>{if(!s)return"—";return new Date(s+"T12:00:00").toLocaleDateString("es-AR");};
