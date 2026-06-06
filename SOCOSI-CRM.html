@@ -247,8 +247,15 @@ function FormLead({propiedades,agentes,onSave,onClose,leadEdit}){
     let err;
     if(leadEdit?.id){({error:err}=await sb.from("leads").update(data).eq("id",leadEdit.id));}
     else{({error:err}=await sb.from("leads").insert({...data,created_at:new Date().toISOString()}));}
+    if(err){setSaving(false);alert("Error: "+err.message);return;}
+    const pasoACoordina=(data.estado_contacto==="CERRADO - coordina visita")&&(leadEdit?.estado_contacto!=="CERRADO - coordina visita");
+    if(pasoACoordina&&data.propiedad_id){
+      const fechaVisita=new Date(Date.now()+5*86400000).toISOString().slice(0,10);
+      const{error:errV}=await sb.from("visitas").insert({fecha:fechaVisita,propiedad_id:data.propiedad_id,propiedad_nombre:data.propiedad_nombre,cliente_nombre:data.cliente_nombre,nombre_visita:data.cliente_nombre,agente_id:data.agente_id||null,resultado:"ABIERTA",estado_visita:"ABIERTA",observaciones:"Generada automáticamente desde contacto",created_at:new Date().toISOString()});
+      if(errV){alert("El contacto se guardó, pero no se pudo crear la visita automática: "+errV.message);}
+    }
     setSaving(false);
-    if(err){alert("Error: "+err.message);}else{onSave();}
+    onSave();
   };
   const catOpts=["Publicación Existente","Solicitud de Tasación","Otros contactos comerciales"];
   const esPubExist=(f.tipo_cat||"Publicación Existente")==="Publicación Existente";
