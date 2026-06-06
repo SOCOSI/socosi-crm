@@ -390,7 +390,7 @@ function Dashboard({props,leads,visitas,metricas,acciones,onNav,activeTab}){
   const totalV=metricas.reduce((s,m)=>s+(m.zonaprop||0)+(m.argenprop||0)+(m.mercadolibre||0),0);
   const today=new Date();
   const in15days=new Date(today.getTime()+15*24*60*60*1000);
-  const visitasAbiertas=visitas.filter(v=>(v.estado_visita||v.resultado)==="ABIERTA");
+  const visitasAbiertas=visitas.filter(v=>(v.resultado||v.estado_visita)==="ABIERTA");
   const propsVenciendoProx15=props.filter(p=>{
     if(!p.aut_venc||p.estado!=="PU")return false;
     const venc=new Date(p.aut_venc);
@@ -478,7 +478,7 @@ function Dashboard({props,leads,visitas,metricas,acciones,onNav,activeTab}){
         <td style={{padding:"6px 8px"}}><Av id={v.agente_id} size={20}/></td>
         <td style={{padding:"6px 8px",fontWeight:600,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.propiedad_nombre||"—"}</td>
         <td style={{padding:"6px 8px",color:"#6c757d",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v.nombre_visita||"—"}</td>
-        <td style={{padding:"6px 8px"}}><span style={{background:(v.estado_visita||v.resultado)==="RESERVA"?"#E8F5E9":"#FFF3CD",color:(v.estado_visita||v.resultado)==="RESERVA"?"#1D9E75":"#856404",borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{v.estado_visita||v.resultado||"ABIERTA"}</span></td>
+        <td style={{padding:"6px 8px"}}><span style={{background:(v.resultado||v.estado_visita)==="RESERVA"?"#E8F5E9":"#FFF3CD",color:(v.resultado||v.estado_visita)==="RESERVA"?"#1D9E75":"#856404",borderRadius:4,padding:"2px 8px",fontSize:11,fontWeight:700}}>{v.resultado||v.estado_visita||"ABIERTA"}</span></td>
       </tr>)}</tbody></table>}
     </div>
     {(()=>{
@@ -702,7 +702,7 @@ function FormEditVisita({visita,propiedades,agentes,onSave,onClose}){
     setSaving(true);
     const{error}=await sb.from("visitas").update({
       fecha:f.fecha,propiedad_id:f.propiedad_id||null,propiedad_nombre:f.propiedad_nombre||null,
-      cliente_nombre:f.cliente_nombre,agente_id:f.agente_id||null,resultado:f.resultado,observaciones:f.observaciones||null
+      cliente_nombre:f.cliente_nombre,agente_id:f.agente_id||null,resultado:f.resultado,estado_visita:f.resultado,observaciones:f.observaciones||null
     }).eq("id",visita.id);
     setSaving(false);
     if(error){alert("Error: "+error.message);}else{onSave();}
@@ -765,7 +765,7 @@ function VisitasPage({visitas,props,leads,agentes,onRefresh,toast}){
     <div className="card" style={{marginBottom:"1rem",padding:"10px 14px"}}><div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}><span style={{fontSize:12,color:"#6c757d",fontWeight:700}}>Agente:</span>{agentesIds.map(ag=>{const act=fAgente.includes(ag);return <button key={ag} onClick={()=>act?setFAgente(fAgente.filter(x=>x!==ag)):setFAgente([...fAgente,ag])} style={{padding:"3px 10px",borderRadius:6,border:`2px solid ${act?"#2563eb":"#dee2e6"}`,background:act?"#EEF3FF":"#fff",color:act?"#2563eb":"#6c757d",fontWeight:act?700:400,fontSize:11,display:"flex",alignItems:"center",gap:4}}><Av id={ag} size={16}/>{agentes.find(a=>a.id===ag)?.nombre||ag}</button>;})}
       <input value={busqueda} onChange={e=>setBusqueda(e.target.value)} placeholder="🔍 Buscar..." style={{padding:"5px 10px",borderRadius:6,border:"1.5px solid #dee2e6",fontSize:12,marginLeft:"auto",minWidth:160}}/></div></div>
     {visOrdenadas.map(v=>{
-      const estado=v.estado_visita||v.resultado||"—";
+      const estado=v.resultado||v.estado_visita||"—";
       return <div key={v.id} className="card" style={{marginBottom:8,display:"flex",gap:12,alignItems:"center"}}>
       <div style={{minWidth:90}}><p style={{margin:0,fontSize:12,color:"#adb5bd"}}>{fDate(v.fecha)}</p></div>
       <div style={{flex:1}}><p style={{margin:"0 0 2px",fontWeight:700}}>{v.nombre_visita||v.cliente_nombre}</p><p style={{margin:0,fontSize:12,color:"#adb5bd"}}>{v.propiedad_nombre}</p></div>
@@ -1059,9 +1059,9 @@ function Publicaciones({props,leads,visitas,metricas}){
             </div>
             <div className="card" style={{padding:"10px 14px"}}>
               <p style={{fontWeight:700,fontSize:12,margin:"0 0 4px",color:"#6c757d"}}>VISITAS ABIERTAS</p>
-              {(()=>{const va=propVis.filter(v=>(v.estado_visita||v.resultado)==="ABIERTA"||(v.estado_visita||v.resultado)==="RESERVA");
+              {(()=>{const va=propVis.filter(v=>(v.resultado||v.estado_visita)==="ABIERTA"||(v.resultado||v.estado_visita)==="RESERVA");
               return va.length===0?<p style={{color:"#adb5bd",fontSize:12,margin:0}}>Sin visitas abiertas</p>:
-              <div>{va.slice(0,3).map(v=>{const st=v.estado_visita||v.resultado||"ABIERTA";const color=st==="RESERVA"?"#1D9E75":"#BA7517";return <div key={v.id} style={{fontSize:11,marginBottom:2}}><span style={{fontWeight:600}}>{v.nombre_visita||"—"}</span> <span style={{color,fontWeight:700}}>{st}</span></div>;})}{va.length>3&&<p style={{fontSize:10,color:"#adb5bd",margin:"2px 0 0"}}>+{va.length-3} más</p>}</div>;})()}
+              <div>{va.slice(0,3).map(v=>{const st=v.resultado||v.estado_visita||"ABIERTA";const color=st==="RESERVA"?"#1D9E75":"#BA7517";return <div key={v.id} style={{fontSize:11,marginBottom:2}}><span style={{fontWeight:600}}>{v.nombre_visita||"—"}</span> <span style={{color,fontWeight:700}}>{st}</span></div>;})}{va.length>3&&<p style={{fontSize:10,color:"#adb5bd",margin:"2px 0 0"}}>+{va.length-3} más</p>}</div>;})()}
             </div>
           </div>
         </div>}
